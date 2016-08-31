@@ -21,6 +21,9 @@
 #include "opencv2/face.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
+#include "opencv2/objdetect.hpp"
+#include "C:/Users/Daniel Hagendorf/Documents/Visual Studio 2015/Projects/Project6/Project6/eigenfaceRecognition.h"
+#include "source1.h"
 
 #include <iostream>
 #include <fstream>
@@ -30,7 +33,8 @@ using namespace cv;
 using namespace cv::face;
 using namespace std;
 
-static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
+
+static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator , CascadeClassifier face_cascade) {
 	std::ifstream file(filename.c_str(), ifstream::in);
 	if (!file) {
 		string error_message = "No valid input file was given, please check the given filename.";
@@ -42,18 +46,29 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
 		getline(liness, path, separator);
 		getline(liness, classlabel);
 		if (!path.empty() && !classlabel.empty()) {
-			images.push_back(imread(path, 0));
-			labels.push_back(atoi(classlabel.c_str()));
+			std::vector<Rect> faces;
+			Mat img = imread(path);
+			face_cascade.detectMultiScale(img, faces, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
+			if (faces.size()>=1) {
+				Mat face = copyFace(img, faces[0].x, faces[0].y, faces[0].x + faces[0].width, faces[0].y + faces[0].height);
+				cvtColor(face, face, COLOR_BGR2GRAY);
+				images.push_back(face);
+				labels.push_back(atoi(classlabel.c_str()));
+			}
+			else {
+				cout << "could not load image" << endl;
+				cout << path << endl;
+			}
 		}
 	}
 }
 
-int eigenface(int argc, const char *argv[]) {
+int eigen(Mat img, CascadeClassifier face_cascade) {
 	string csv = string("c:/csv.csv");
     vector<Mat> images;
 	vector<int> labels;
 	try {
-		read_csv(csv, images, labels);
+		read_csv(csv, images, labels, ';', face_cascade);
 	}
 	catch (cv::Exception& e) {
 		cerr << "Error opening file \"" << csv << "\". Reason: " << e.msg << endl;
@@ -63,12 +78,14 @@ int eigenface(int argc, const char *argv[]) {
 		string error_message = "This demo needs at least 2 images to work. Please add more images to your data set!";
 		CV_Error(Error::StsError, error_message);
 	}
-	Mat img = imread("c:/WeizmanProjectPictures/Daniel/p1.jpg", 0);
 	int test = 0;
 	Ptr<BasicFaceRecognizer> model = createEigenFaceRecognizer(0);
 	model->train(images, labels);
-	int predictedLabel = model->predict(img);
-	string result_message = format("Predicted class = %d / Actual class = %d.", predictedLabel, test);
+	int predicted_label = -1;
+	double predicted_confidence = 0.0;
+	model->predict(img, predicted_label, predicted_confidence);
+	//int predictedLabel = model->predict(img);
+	string result_message = format("Predicted class = %d / Actual class = %d. confidencd= %d", predicted_label, test,predicted_confidence);
 	cout << result_message << endl;
 	waitKey(0);
 	return 0;

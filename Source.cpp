@@ -2,6 +2,8 @@
 #include "opencv2/videoio.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
+#include "C:/Users/Daniel Hagendorf/Documents/Visual Studio 2015/Projects/Project6/Project6/eigenfaceRecognition.h"
+#include "source1.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -11,6 +13,8 @@ using namespace cv;
 
 /** Function Headers */
 void detectAndDisplay(Mat frame);
+int eigen(Mat img, CascadeClassifier face_cascade);
+Mat copyFace(Mat img, int leftWidth, int bottomHeight, int rightWidth, int topHeight);
 
 /** Global variables */
 String face_cascade_name = "haarcascade_frontalface_alt.xml";
@@ -20,15 +24,14 @@ CascadeClassifier eyes_cascade;
 String window_name = "Capture - Face detection";
 
 /** @function main */
-int ddd(void)
+int main(void)
 {
-
 	VideoCapture capture;
 	Mat frame;
 	Mat img;
-	img = imread("c:/WeizmanProjectPictures/Daniel/p9.jpg");
-	namedWindow("My", WINDOW_AUTOSIZE);
-	imshow("My", img);
+	img = imread("C:/Users/Daniel Hagendorf/Pictures/Camera Roll/p2.jpg");
+	//namedWindow("My", WINDOW_AUTOSIZE);
+	//imshow("My", img);
 	//-- 1. Load the cascades
 	if (!face_cascade.load(face_cascade_name)) { printf("--(!)Error loading face cascade\n"); return -1; };
 	if (!eyes_cascade.load(eyes_cascade_name)) { printf("--(!)Error loading eyes cascade\n"); return -1; };
@@ -55,7 +58,9 @@ void detectAndDisplay(Mat frame)
 	{
 		Point center(faces[i].x + faces[i].width / 2, faces[i].y + faces[i].height / 2);
 		ellipse(frame, center, Size(faces[i].width / 2, faces[i].height / 2), 0, 0, 360, Scalar(255, 0, 255), 4, 8, 0);
-
+		Mat face = copyFace(frame,faces[i].x, faces[i].y, faces[i].x + faces[i].width, faces[i].y + faces[i].height);
+		cvtColor(face, face,COLOR_BGR2GRAY);
+		eigen(face, face_cascade);
 		Mat faceROI = frame_gray(faces[i]);
 		std::vector<Rect> eyes;
 
