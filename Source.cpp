@@ -3,17 +3,22 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 #include "C:/Users/Daniel Hagendorf/Documents/Visual Studio 2015/Projects/Project6/Project6/eigenfaceRecognition.h"
-#include "source1.h"
+#include "copyFace.h"
+#include "readCSV.h"
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <stdio.h>
 
 using namespace std;
 using namespace cv;
 
+
 /** Function Headers */
-void detectAndDisplay(Mat frame);
-int eigen(Mat img, CascadeClassifier face_cascade);
+void detectAndDisplay(Mat frame, vector<Mat>& images, vector<int>& labels);
+int eigen(Mat img, CascadeClassifier face_cascade, vector<Mat>& images, vector<int>& labels);
+void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator, CascadeClassifier face_cascade);
 Mat copyFace(Mat img, int leftWidth, int bottomHeight, int rightWidth, int topHeight);
 
 /** Global variables */
@@ -23,27 +28,41 @@ CascadeClassifier face_cascade;
 CascadeClassifier eyes_cascade;
 String window_name = "Capture - Face detection";
 
+
 /** @function main */
 int main(void)
 {
 	VideoCapture capture;
 	Mat frame;
 	Mat img;
-	img = imread("C:/Users/Daniel Hagendorf/Pictures/Camera Roll/p2.jpg");
-	//namedWindow("My", WINDOW_AUTOSIZE);
-	//imshow("My", img);
+	img = imread("C:/Users/Daniel Hagendorf/Pictures/Camera Roll/p1.jpg");
+	
 	//-- 1. Load the cascades
 	if (!face_cascade.load(face_cascade_name)) { printf("--(!)Error loading face cascade\n"); return -1; };
 	if (!eyes_cascade.load(eyes_cascade_name)) { printf("--(!)Error loading eyes cascade\n"); return -1; };
 
+	string csv = string("c:/csv2.csv");
+	vector<Mat> images;
+	vector<int> labels;
+	try {
+		read_csv(csv, images, labels, ';', face_cascade);
+	}
+	catch (cv::Exception& e) {
+		cerr << "Error opening file \"" << csv << "\". Reason: " << e.msg << endl;
+		exit(1);
+	}
+	if (images.size() <= 1) {
+		string error_message = "This demo needs at least 2 images to work. Please add more images to your data set!";
+		CV_Error(Error::StsError, error_message);
+	}
 	//-- 2. Read the video stream
-	detectAndDisplay(img);
+	detectAndDisplay(img,images,labels);
 	waitKey(0);
 	return 0;
 }
 
 /** @function detectAndDisplay */
-void detectAndDisplay(Mat frame)
+void detectAndDisplay(Mat frame, vector<Mat>& images, vector<int>& labels)
 {
 	std::vector<Rect> faces;
 	Mat frame_gray;
@@ -59,20 +78,22 @@ void detectAndDisplay(Mat frame)
 		Point center(faces[i].x + faces[i].width / 2, faces[i].y + faces[i].height / 2);
 		ellipse(frame, center, Size(faces[i].width / 2, faces[i].height / 2), 0, 0, 360, Scalar(255, 0, 255), 4, 8, 0);
 		Mat face = copyFace(frame,faces[i].x, faces[i].y, faces[i].x + faces[i].width, faces[i].y + faces[i].height);
+		namedWindow("Daniel", WINDOW_AUTOSIZE);
+		imshow("Daniel", face);
 		cvtColor(face, face,COLOR_BGR2GRAY);
-		eigen(face, face_cascade);
+		eigen(face, face_cascade, images, labels);
 		Mat faceROI = frame_gray(faces[i]);
 		std::vector<Rect> eyes;
 
 		//-- In each face, detect eyes
-		eyes_cascade.detectMultiScale(faceROI, eyes, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
+		/*eyes_cascade.detectMultiScale(faceROI, eyes, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
 
 		for (size_t j = 0; j < eyes.size(); j++)
 		{
 			Point eye_center(faces[i].x + eyes[j].x + eyes[j].width / 2, faces[i].y + eyes[j].y + eyes[j].height / 2);
 			int radius = cvRound((eyes[j].width + eyes[j].height)*0.25);
 			circle(frame, eye_center, radius, Scalar(255, 0, 0), 4, 8, 0);
-		}
+		}*/
 	}
 	//-- Show what you got
 	imshow(window_name, frame);

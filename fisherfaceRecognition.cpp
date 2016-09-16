@@ -20,6 +20,7 @@
 #include "opencv2/face.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
+#include "opencv2/objdetect.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -29,48 +30,24 @@ using namespace cv;
 using namespace cv::face;
 using namespace std;
 
-static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
-	std::ifstream file(filename.c_str(), ifstream::in);
-	if (!file) {
-		string error_message = "No valid input file was given, please check the given filename.";
-		CV_Error(Error::StsBadArg, error_message);
-	}
-	string line, path, classlabel;
-	while (getline(file, line)) {
-		stringstream liness(line);
-		getline(liness, path, separator);
-		getline(liness, classlabel);
-		if (!path.empty() && !classlabel.empty()) {
-			images.push_back(imread(path, 0));
-			labels.push_back(atoi(classlabel.c_str()));
-		}
-	}
-}
 
-int main(int argc, const char *argv[]) {	
-	string csv = string("c:/csv.csv");
-	vector<Mat> images;
-	vector<int> labels;
-
-	try {
-		read_csv(csv, images, labels);
-	}
-	catch (cv::Exception& e) {
-		cerr << "Error opening file \"" << csv << "\". Reason: " << e.msg << endl;
-		exit(1);
-	}
-	if (images.size() <= 1) {
-		string error_message = "This demo needs at least 2 images to work. Please add more images to your data set!";
-		CV_Error(Error::StsError, error_message);
-	}
-	
+int fisher(Mat img, CascadeClassifier face_cascade, vector<Mat>& images, vector<int>& labels) {
+	int test = 0;
 	Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer(0);
 	model->train(images, labels);
-	Mat img = imread("C:/Users/Daniel Hagendorf/Pictures/Camera Roll/p16.jpg", 0);
-	int predictedLabel = model->predict(img);
-	int test = 0;
-	string result_message = format("Predicted class = %d / Actual class = %d.", predictedLabel, test);
+	int predicted_label = -1;
+	double predicted_confidence = 0.0;
+	model->predict(img, predicted_label, predicted_confidence);
+	string result_message;
+	if (predicted_label != 0) {
+		result_message = "unknown";
+		cout << predicted_confidence << endl;
+	}
+	else {
+		result_message = format("Predicted class = %d / Actual class = %d. confidence= %d", predicted_label, test, predicted_confidence);
+	}
 	cout << result_message << endl;
 	waitKey(0);
 	return 0;
+	
 }

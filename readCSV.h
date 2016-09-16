@@ -9,4 +9,4 @@ using namespace cv;
 using namespace cv::face;
 using namespace std;
 
-int eigen(Mat img, CascadeClassifier face_cascade, vector<Mat>& images, vector<int>& labels);
+void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator, CascadeClassifier face_cascade);
