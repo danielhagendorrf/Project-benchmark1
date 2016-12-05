@@ -15,14 +15,14 @@ using namespace cv::face;
 using namespace std;
 
 
-int eigen(Mat img, CascadeClassifier face_cascade, Ptr<BasicFaceRecognizer> model) {
+int LBP(Mat img, CascadeClassifier face_cascade, Ptr<FaceRecognizer> model) {
 
 	int test = 0;
 	int predicted_label = -1;
 	double predicted_confidence = 0.0;
 	model->predict(img, predicted_label, predicted_confidence);
 	string result_message;
-	if (predicted_label == 0 && predicted_confidence > 10000) {
+	if (predicted_label == 0 && predicted_confidence > 0) {
 		return 0;
 	}
 	else {
@@ -30,8 +30,8 @@ int eigen(Mat img, CascadeClassifier face_cascade, Ptr<BasicFaceRecognizer> mode
 	}
 }
 
-Ptr<BasicFaceRecognizer> train(vector<Mat>& images, vector<int>& labels) {
-	Ptr<BasicFaceRecognizer> model = createEigenFaceRecognizer(0);
+Ptr<FaceRecognizer> trainLBP(vector<Mat>& images, vector<int>& labels) {
+	Ptr<FaceRecognizer> model = createLBPHFaceRecognizer(2,16);
 	model->train(images, labels);
 	return model;
 }
